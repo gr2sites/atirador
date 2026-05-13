@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Disparador Whatsapp Pro</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root {
+      --g1: #00c853;
+      --g2: #69f0ae;
+      --bg: #07120a;
+      --surf: #0d1f12;
+      --surf2: #142919;
+      --border: rgba(0,200,83,0.18);
+      --muted: #4a7a56;
+      --text: #e0f2e6;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Outfit', sans-serif;
+      min-height: 100vh;
+    }
+
+    body::before {
+      content: '';
+      position: fixed; inset: 0; z-index: 0;
+      background:
+        radial-gradient(ellipse 80% 50% at 50% -10%, rgba(0,200,83,0.12), transparent),
+        linear-gradient(rgba(0,200,83,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,200,83,0.03) 1px, transparent 1px);
+      background-size: auto, 48px 48px, 48px 48px;
+      pointer-events: none;
+    }
+
+    .app { position: relative; z-index: 1; display: flex; flex-direction: column; min-height: 100vh; }
+
+    .view { display: none; }
+    .view.active { display: flex; flex-direction: column; }
+
+    /* ── SETUP VIEW ── */
+    #viewSetup {
+      align-items: center; justify-content: center;
+      min-height: 100vh; padding: 2rem 1rem;
+    }
+
+    .setup-card {
+      background: var(--surf);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 2.5rem 2rem;
+      max-width: 500px; width: 100%;
+      box-shadow: 0 0 80px rgba(0,200,83,0.08);
+    }
+
+    .logo-ring {
+      width: 76px; height: 76px; border-radius: 50%;
+      background: linear-gradient(135deg, #00c853, #69f0ae);
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 1.4rem;
+      box-shadow: 0 0 48px rgba(0,200,83,0.45);
+      animation: breathe 3s ease-in-out infinite;
+    }
+    @keyframes breathe {
+      0%,100% { box-shadow: 0 0 40px rgba(0,200,83,0.4); }
+      50%      { box-shadow: 0 0 70px rgba(0,200,83,0.7); }
+    }
+    .logo-ring svg { width: 42px; height: 42px; fill: white; }
+
+    .setup-title {
+      font-size: 1.9rem; font-weight: 800; text-align: center;
+      background: linear-gradient(90deg, var(--g1), var(--g2));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text; margin-bottom: .3rem;
+    }
+    .setup-sub {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .7rem; color: var(--muted);
+      text-align: center; letter-spacing: .12em; margin-bottom: 2rem;
+    }
+
+    .field-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .68rem; color: var(--g1);
+      letter-spacing: .12em; text-transform: uppercase;
+      margin-bottom: .4rem; display: block;
+    }
+    .field-input {
+      width: 100%;
+      background: var(--surf2);
+      border: 1px solid var(--border);
+      border-radius: 10px; color: var(--text);
+      padding: .75rem 1rem;
+      font-family: 'JetBrains Mono', monospace; font-size: .85rem;
+      outline: none; transition: border-color .2s, box-shadow .2s;
+      margin-bottom: 1.1rem;
+    }
+    .field-input:focus { border-color: var(--g1); box-shadow: 0 0 0 3px rgba(0,200,83,.1); }
+    .field-input::placeholder { color: var(--muted); }
+
+    .hint-box {
+      background: rgba(0,200,83,.06);
+      border: 1px solid rgba(0,200,83,.18);
+      border-radius: 10px; padding: .9rem 1rem;
+      font-size: .82rem; color: var(--muted);
+      line-height: 1.75; margin-bottom: 1.4rem;
+    }
+    .hint-box a { color: var(--g2); text-decoration: none; }
+    .hint-box a:hover { text-decoration: underline; }
+    .hint-box strong { color: var(--g1); }
+
+    .steps-list { list-style: none; padding: 0; }
+    .steps-list li {
+      display: flex; gap: .7rem; align-items: flex-start;
+      padding: .35rem 0;
+      border-bottom: 1px solid rgba(0,200,83,.08);
+      font-size: .82rem;
+    }
+    .steps-list li:last-child { border-bottom: none; }
+    .step-num {
+      background: rgba(0,200,83,.15);
+      border: 1px solid rgba(0,200,83,.3);
+      color: var(--g1); border-radius: 50%;
+      width: 22px; height: 22px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'JetBrains Mono', monospace; font-size: .65rem; font-weight: 700;
+    }
+
+    /* ── BUTTONS ── */
+    .btn-primary {
+      width: 100%; padding: .9rem;
+      background: linear-gradient(135deg, #00a844, #00c853);
+      border: none; border-radius: 12px;
+      color: white; font-family: 'Outfit', sans-serif;
+      font-size: 1rem; font-weight: 700; letter-spacing: .04em;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: .6rem;
+      transition: transform .15s, box-shadow .3s;
+      box-shadow: 0 4px 24px rgba(0,200,83,.25);
+      margin-bottom: .7rem;
+    }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(0,200,83,.4); }
+    .btn-primary:disabled { opacity: .45; cursor: not-allowed; }
+
+    .btn-sec {
+      background: transparent;
+      border: 1px solid rgba(0,200,83,.2); border-radius: 8px;
+      color: var(--muted); padding: .45rem .9rem;
+      font-family: 'JetBrains Mono', monospace; font-size: .72rem;
+      cursor: pointer; transition: all .2s; width: 100%;
+    }
+    .btn-sec:hover { border-color: var(--g1); color: var(--g1); }
+
+    /* ── MAIN VIEW ── */
+    #viewMain { padding: 2rem 1rem 4rem; }
+    .main-inner { max-width: 880px; margin: 0 auto; }
+
+    .topbar {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;
+    }
+    .topbar-title {
+      font-size: 1.6rem; font-weight: 800;
+      background: linear-gradient(90deg, var(--g1), var(--g2));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .conn-badge {
+      display: flex; align-items: center; gap: .5rem;
+      background: rgba(0,200,83,.08); border: 1px solid rgba(0,200,83,.25);
+      border-radius: 99px; padding: .35rem .9rem;
+      font-family: 'JetBrains Mono', monospace; font-size: .7rem; color: var(--g1);
+    }
+    .conn-dot {
+      width: 7px; height: 7px; border-radius: 50%; background: var(--g1);
+      animation: breathe 2s infinite;
+    }
+
+    .card-g {
+      background: var(--surf); border: 1px solid var(--border);
+      border-radius: 16px; padding: 1.5rem 1.6rem;
+      margin-bottom: 1.3rem; transition: border-color .25s;
+    }
+    .card-g:hover { border-color: rgba(0,200,83,.3); }
+
+    .sec-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .66rem; color: var(--g1); letter-spacing: .14em;
+      text-transform: uppercase; margin-bottom: .9rem;
+      display: flex; align-items: center; gap: .5rem;
+    }
+    .sec-label::after { content:''; flex:1; height:1px; background: rgba(0,200,83,.18); }
+
+    textarea.msg-area {
+      width: 100%; background: var(--surf2);
+      border: 1px solid rgba(0,200,83,.2); border-radius: 10px;
+      color: var(--text); padding: .9rem 1rem;
+      font-family: 'Outfit', sans-serif; font-size: .95rem; line-height: 1.65;
+      resize: vertical; min-height: 120px;
+      outline: none; transition: border-color .2s, box-shadow .2s;
+    }
+    textarea.msg-area:focus { border-color: var(--g1); box-shadow: 0 0 0 3px rgba(0,200,83,.1); }
+    textarea.msg-area::placeholder { color: var(--muted); }
+
+    .char-c {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .68rem; color: var(--muted);
+      text-align: right; margin-top: .35rem;
+    }
+
+    .phone-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(215px, 1fr));
+      gap: .7rem;
+    }
+    .ph-wrap { position: relative; }
+    .ph-num {
+      position: absolute; top: 50%; left: .7rem;
+      transform: translateY(-50%);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .6rem; color: var(--muted); pointer-events: none;
+    }
+    .ph-in {
+      width: 100%; background: var(--surf2);
+      border: 1px solid rgba(0,200,83,.15); border-radius: 8px;
+      color: var(--text); padding: .6rem .7rem .6rem 1.9rem;
+      font-family: 'JetBrains Mono', monospace; font-size: .85rem;
+      outline: none; transition: border-color .2s, box-shadow .2s, background .2s;
+    }
+    .ph-in:focus { border-color: var(--g1); box-shadow: 0 0 0 3px rgba(0,200,83,.08); background: rgba(0,200,83,.03); }
+    .ph-in::placeholder { color: var(--muted); font-size: .72rem; }
+    .ph-in.valid   { border-color: var(--g1); }
+    .ph-in.invalid { border-color: #e53935; }
+    .ph-dot {
+      position: absolute; right: .65rem; top: 50%; transform: translateY(-50%);
+      width: 6px; height: 6px; border-radius: 50%; transition: background .2s;
+    }
+    .ph-in.valid   ~ .ph-dot { background: var(--g1); }
+    .ph-in.invalid ~ .ph-dot { background: #e53935; }
+
+    .stats-row { display: flex; gap: .8rem; flex-wrap: wrap; margin-bottom: 1.2rem; }
+    .stat-pill {
+      background: var(--surf2); border: 1px solid rgba(0,200,83,.15);
+      border-radius: 8px; padding: .4rem .9rem;
+      font-family: 'JetBrains Mono', monospace; font-size: .72rem;
+      display: flex; align-items: center; gap: .4rem;
+    }
+    .stat-pill b { color: var(--g2); }
+
+    .prog-wrap { height: 3px; background: rgba(0,200,83,.1); border-radius: 99px; overflow: hidden; margin-bottom: 1rem; }
+    .prog-fill { height: 100%; background: linear-gradient(90deg, #00a844, #69f0ae); border-radius: 99px; transition: width .4s ease; width: 0%; }
+
+    .btn-fire {
+      width: 100%; padding: 1rem;
+      background: linear-gradient(135deg, #00a844, #00c853);
+      border: none; border-radius: 12px;
+      color: white; font-family: 'Outfit', sans-serif;
+      font-size: 1.05rem; font-weight: 700; letter-spacing: .05em;
+      cursor: pointer; display: flex; align-items: center; justify-content: center; gap: .6rem;
+      transition: transform .15s, box-shadow .3s;
+      box-shadow: 0 4px 24px rgba(0,200,83,.25);
+    }
+    .btn-fire:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(0,200,83,.42); }
+    .btn-fire:disabled { opacity: .45; cursor: not-allowed; }
+
+    .btn-sm-sec {
+      background: transparent; border: 1px solid rgba(0,200,83,.2); border-radius: 8px;
+      color: var(--muted); padding: .4rem .85rem;
+      font-family: 'JetBrains Mono', monospace; font-size: .7rem;
+      cursor: pointer; transition: all .2s;
+    }
+    .btn-sm-sec:hover { border-color: var(--g1); color: var(--g1); }
+
+    .log-box {
+      background: #040c06; border: 1px solid rgba(0,200,83,.12);
+      border-radius: 10px; padding: .9rem 1rem;
+      font-family: 'JetBrains Mono', monospace; font-size: .7rem;
+      max-height: 220px; overflow-y: auto; display: none; margin-top: 1rem;
+    }
+    .log-box.show { display: block; }
+    .log-ln {
+      padding: .22rem 0; border-bottom: 1px solid rgba(255,255,255,.04);
+      display: flex; align-items: flex-start; gap: .5rem;
+      animation: fadein .25s ease;
+    }
+    @keyframes fadein { from { opacity:0; transform:translateX(-6px); } to { opacity:1; transform:translateX(0); } }
+    .log-ln.ok  { color: var(--g1); }
+    .log-ln.err { color: #ef9a9a; }
+    .log-ln.inf { color: var(--muted); }
+
+    .result-banner {
+      display: none; background: rgba(0,200,83,.08);
+      border: 1px solid rgba(0,200,83,.3); border-radius: 12px;
+      padding: 1rem 1.2rem; font-size: .9rem;
+      margin-top: 1rem; align-items: center; gap: .8rem;
+    }
+    .result-banner.show { display: flex; }
+    .result-banner .big { font-size: 1.4rem; font-weight: 800; color: var(--g1); }
+
+    @keyframes spin { to { transform:rotate(360deg); } }
+    .spinner {
+      width: 18px; height: 18px;
+      border: 2px solid rgba(255,255,255,.3);
+      border-top-color: white; border-radius: 50%;
+      animation: spin .7s linear infinite;
+    }
+
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-thumb { background: #00a844; border-radius: 99px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+
+    @media (max-width:540px) { .phone-grid { grid-template-columns: 1fr 1fr; } }
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ════════════════════════ VIEW SETUP ════════════════════════ -->
+  <div id="viewSetup" class="view active">
+    <div class="setup-card">
+
+      <div class="logo-ring">
+        <svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413z"/></svg>
+      </div>
+
+      <div class="setup-title">Disparador Whatsapp</div>
+      <div class="setup-sub">// CONFIGURAÇÃO — WHAPI.CLOUD (GRATUITO)</div>
+
+      <div class="hint-box">
+        <strong>Como obter sua API 100% gratuita:</strong>
+        <ul class="steps-list" style="margin-top:.6rem;">
+          <li><span class="step-num">1</span>Acesse <a href="https://whapi.cloud" target="_blank">whapi.cloud</a> e crie uma conta grátis</li>
+          <li><span class="step-num">2</span>No painel clique em <strong>"Try FREE"</strong> → cria um canal Sandbox</li>
+          <li><span class="step-num">3</span>Escaneie o QR Code com o WhatsApp do número <strong>16 991976187</strong></li>
+          <li><span class="step-num">4</span>Copie o <strong>Token</strong> e a <strong>API URL</strong> do canal e cole abaixo</li>
+          <li><span class="step-num">✓</span>Plano grátis: <strong>150 msg/dia</strong> para qualquer número, sem cartão</li>
+        </ul>
+      </div>
+
+      <label class="field-label">🔑 Token do Canal (Bearer Token)</label>
+      <input class="field-input" type="text" id="apiToken"
+             placeholder="eyJhbGciOiJIUzI1NiIsInR5..."
+             autocomplete="off" spellcheck="false"/>
+
+      <label class="field-label">🌐 API URL do Canal</label>
+      <input class="field-input" type="text" id="apiUrl"
+             placeholder="https://gate.whapi.cloud/channels/XXXXXXXX"
+             autocomplete="off" spellcheck="false"/>
+
+      <button class="btn-primary" id="btnConnect" onclick="saveConfig()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>
+        Conectar e Entrar
+      </button>
+
+      <button class="btn-sec" onclick="useDemoMode()">▸ Entrar sem API (modo demonstração)</button>
+
+      <div id="setupErr" style="display:none;margin-top:.8rem;background:rgba(229,57,53,.08);border:1px solid rgba(229,57,53,.3);border-radius:8px;padding:.6rem .9rem;font-size:.78rem;color:#ef9a9a;"></div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════ VIEW MAIN ════════════════════════ -->
+  <div id="viewMain" class="view">
+    <div class="main-inner">
+
+      <!-- Topbar -->
+      <div class="topbar">
+        <div>
+          <div class="topbar-title">WhatsApp Disparador</div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:.68rem;color:var(--muted);margin-top:.15rem;">
+            Origem: +55 16 99197-6187
+          </div>
+        </div>
+        <div style="display:flex;gap:.6rem;align-items:center;flex-wrap:wrap;">
+          <div class="conn-badge" id="connBadge">
+            <div class="conn-dot" id="connDot"></div>
+            <span id="connLabel">Conectado</span>
+          </div>
+          <button class="btn-sm-sec" onclick="showSetup()">⚙ Reconfigurar</button>
+        </div>
+      </div>
+
+      <!-- Stats -->
+      <div class="stats-row">
+        <div class="stat-pill">Preenchidos: <b id="sFill">0</b></div>
+        <div class="stat-pill">Válidos: <b id="sValid">0</b></div>
+        <div class="stat-pill">Enviados: <b id="sSent">0</b></div>
+        <div class="stat-pill">Falhas: <b id="sFail">0</b></div>
+      </div>
+
+      <!-- Message -->
+      <div class="card-g">
+        <div class="sec-label">01 — Mensagem</div>
+        <textarea class="msg-area" id="msgInput"
+          placeholder="Digite aqui a mensagem que será enviada para todos os contatos..."
+          maxlength="1000"></textarea>
+        <div class="char-c"><span id="cChar">0</span> / 1000 caracteres</div>
+      </div>
+
+      <!-- Phones -->
+      <div class="card-g">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.9rem;flex-wrap:wrap;gap:.5rem;">
+          <div class="sec-label" style="margin-bottom:0;flex:1;">02 — Números de WhatsApp (com DDD)</div>
+          <button class="btn-sm-sec" onclick="clearAll()">✕ Limpar tudo</button>
+        </div>
+        <div class="phone-grid" id="phoneGrid"></div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:.65rem;color:var(--muted);margin-top:.8rem;">
+          💡 Dica: cole vários números de uma vez no primeiro campo (separados por vírgula, ponto-e-vírgula ou linha)
+        </div>
+      </div>
+
+      <!-- Progress -->
+      <div class="prog-wrap" id="progWrap" style="display:none;">
+        <div class="prog-fill" id="progFill"></div>
+      </div>
+
+      <!-- Fire button -->
+      <button class="btn-fire" id="btnFire" onclick="fireMessages()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+        Disparar Mensagens
+      </button>
+
+      <!-- Result -->
+      <div class="result-banner" id="resultBanner">
+        <div style="font-size:1.6rem;">✅</div>
+        <div>
+          <span class="big" id="resSent">0</span> enviadas com sucesso &nbsp;|&nbsp;
+          <span id="resFail" style="color:#ef9a9a;font-weight:700;">0</span> falhas
+        </div>
+      </div>
+
+      <!-- Log -->
+      <div class="log-box" id="logBox"></div>
+
+    </div>
+  </div>
+
+</div><!-- /app -->
+
+<script>
+// ─────────────────────────────────────────────
+//  CONSTANTS & STATE
+// ─────────────────────────────────────────────
+const TOTAL = 15;
+let CFG = { token: '', url: '', demo: false };
+let sentCount = 0, failCount = 0;
+
+// ─────────────────────────────────────────────
+//  BUILD PHONE FIELDS
+// ─────────────────────────────────────────────
+(function buildGrid() {
+  const grid = document.getElementById('phoneGrid');
+  for (let i = 1; i <= TOTAL; i++) {
+    const w = document.createElement('div');
+    w.className = 'ph-wrap';
+    w.innerHTML = `
+      <span class="ph-num">${String(i).padStart(2,'0')}</span>
+      <input class="ph-in" id="ph${i}" type="tel"
+             placeholder="11999887766"
+             oninput="validatePh(this)"
+             onpaste="setTimeout(()=>validatePh(this),0)"/>
+      <span class="ph-dot"></span>`;
+    grid.appendChild(w);
+  }
+})();
+
+// ─────────────────────────────────────────────
+//  PHONE VALIDATION
+// ─────────────────────────────────────────────
+function validatePh(el) {
+  const d = el.value.replace(/\D/g,'');
+  el.classList.remove('valid','invalid');
+  if (!d) { updateStats(); return; }
+  d.length >= 10 && d.length <= 13
+    ? el.classList.add('valid')
+    : el.classList.add('invalid');
+  updateStats();
+}
+
+function updateStats() {
+  let fill = 0, valid = 0;
+  for (let i = 1; i <= TOTAL; i++) {
+    const el = document.getElementById(`ph${i}`);
+    if (el.value.replace(/\D/g,'')) fill++;
+    if (el.classList.contains('valid')) valid++;
+  }
+  document.getElementById('sFill').textContent  = fill;
+  document.getElementById('sValid').textContent = valid;
+}
+
+// Char counter
+document.getElementById('msgInput').addEventListener('input', function () {
+  document.getElementById('cChar').textContent = this.value.length;
+});
+
+// ─────────────────────────────────────────────
+//  MULTI-PASTE
+// ─────────────────────────────────────────────
+document.addEventListener('paste', e => {
+  const active = document.activeElement;
+  if (!active || !active.classList.contains('ph-in')) return;
+  const text = (e.clipboardData || window.clipboardData).getData('text');
+  const lines = text.split(/[\n,;]/).map(l => l.trim()).filter(Boolean);
+  if (lines.length <= 1) return;
+  e.preventDefault();
+  const from = parseInt(active.id.replace('ph',''));
+  lines.forEach((line, off) => {
+    const idx = from + off;
+    if (idx > TOTAL) return;
+    const el = document.getElementById(`ph${idx}`);
+    if (el) { el.value = line.replace(/\D/g,''); validatePh(el); }
+  });
+});
+
+// ─────────────────────────────────────────────
+//  CONFIG / VIEWS
+// ─────────────────────────────────────────────
+function saveConfig() {
+  const token = document.getElementById('apiToken').value.trim();
+  const url   = document.getElementById('apiUrl').value.trim();
+  const errEl = document.getElementById('setupErr');
+
+  if (!token || !url) {
+    errEl.textContent = '⚠ Preencha o Token e a URL do canal antes de continuar.';
+    errEl.style.display = 'block'; return;
+  }
+  // Basic URL validation
+  if (!url.startsWith('http')) {
+    errEl.textContent = '⚠ A URL do canal deve começar com https://';
+    errEl.style.display = 'block'; return;
+  }
+
+  errEl.style.display = 'none';
+  CFG = { token, url: url.replace(/\/$/, ''), demo: false };
+  localStorage.setItem('wdcfg', JSON.stringify(CFG));
+
+  setConnBadge('Conectado via Whapi.Cloud', '#00c853');
+  switchView('viewMain');
+}
+
+function useDemoMode() {
+  CFG = { token: '', url: '', demo: true };
+  setConnBadge('Modo Demo (wa.me links)', '#ffc107');
+  switchView('viewMain');
+}
+
+function showSetup() { switchView('viewSetup'); }
+
+function switchView(id) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function setConnBadge(label, color) {
+  document.getElementById('connLabel').textContent = label;
+  document.getElementById('connDot').style.background = color;
+  document.getElementById('connBadge').style.color = color;
+}
+
+// Restore saved config on load
+(function restoreCfg() {
+  try {
+    const saved = JSON.parse(localStorage.getItem('wdcfg') || '{}');
+    if (saved.token && saved.url) {
+      CFG = saved;
+      document.getElementById('apiToken').value = saved.token;
+      document.getElementById('apiUrl').value   = saved.url;
+      setConnBadge('Conectado via Whapi.Cloud', '#00c853');
+      switchView('viewMain');
+    }
+  } catch(e) {}
+})();
+
+// ─────────────────────────────────────────────
+//  FORMAT PHONE → E.164 sem o +
+// ─────────────────────────────────────────────
+function fmtPhone(raw) {
+  let d = raw.replace(/\D/g,'');
+  // Add Brazil country code if missing
+  if (!d.startsWith('55') && d.length <= 11) d = '55' + d;
+  return d; // e.g. "5511999887766"
+}
+
+// ─────────────────────────────────────────────
+//  LOG
+// ─────────────────────────────────────────────
+function log(msg, type = 'inf') {
+  const box = document.getElementById('logBox');
+  box.classList.add('show');
+  const icons = { ok:'✓', err:'✗', inf:'›' };
+  const div = document.createElement('div');
+  div.className = `log-ln ${type}`;
+  div.innerHTML = `<span style="flex-shrink:0">${icons[type]}</span><span>${msg}</span>`;
+  box.appendChild(div);
+  box.scrollTop = box.scrollHeight;
+}
+
+function clearLog() {
+  const box = document.getElementById('logBox');
+  box.innerHTML = '';
+  box.classList.remove('show');
+}
+
+// ─────────────────────────────────────────────
+//  SEND via Whapi.Cloud REST API
+// ─────────────────────────────────────────────
+async function sendWhapi(phone, message) {
+  // phone must be like "5516991976187@s.whatsapp.net" OR just "5516991976187"
+  // Whapi accepts the plain number
+  const res = await fetch(`${CFG.url}/messages/text`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${CFG.token}`
+    },
+    body: JSON.stringify({
+      to:   `${phone}@s.whatsapp.net`,
+      body: message
+    })
+  });
+
+  let data = {};
+  try { data = await res.json(); } catch(e) {}
+
+  if (!res.ok) {
+    const errMsg = data?.message
+      || data?.error?.message
+      || data?.detail
+      || `HTTP ${res.status}`;
+    throw new Error(errMsg);
+  }
+  return data;
+}
+
+// ─────────────────────────────────────────────
+//  SEND via wa.me (demo fallback)
+// ─────────────────────────────────────────────
+function sendDemo(phone, message) {
+  const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+  window.open(url, `_wa_${Date.now()}`, 'noopener,width=800,height=600');
+}
+
+// ─────────────────────────────────────────────
+//  FIRE ALL MESSAGES
+// ─────────────────────────────────────────────
+async function fireMessages() {
+  const message = document.getElementById('msgInput').value.trim();
+  if (!message) {
+    log('⚠ Escreva uma mensagem antes de disparar.', 'err');
+    return;
+  }
+
+  // Collect valid numbers
+  const nums = [];
+  for (let i = 1; i <= TOTAL; i++) {
+    const el = document.getElementById(`ph${i}`);
+    if (el.classList.contains('valid')) {
+      nums.push({ idx: i, phone: fmtPhone(el.value) });
+    }
+  }
+
+  if (!nums.length) {
+    log('⚠ Nenhum número válido encontrado. Preencha os campos com DDD + número.', 'err');
+    return;
+  }
+
+  // ── UI start state ──
+  const btn = document.getElementById('btnFire');
+  btn.disabled = true;
+  btn.innerHTML = `<div class="spinner"></div> Disparando ${nums.length} mensagem(ns)...`;
+
+  const progWrap = document.getElementById('progWrap');
+  const progFill = document.getElementById('progFill');
+  progWrap.style.display = 'block';
+  progFill.style.width   = '0%';
+
+  document.getElementById('resultBanner').classList.remove('show');
+  clearLog();
+
+  sentCount = 0; failCount = 0;
+  document.getElementById('sSent').textContent = '0';
+  document.getElementById('sFail').textContent = '0';
+
+  const mode = CFG.demo ? 'Demo (wa.me)' : 'Whapi.Cloud API';
+  log(`▶ Iniciando disparo de ${nums.length} mensagem(ns) — ${mode}`, 'inf');
+  if (CFG.demo) log('ℹ Modo demo: uma aba do WhatsApp Web será aberta por número.', 'inf');
+
+  // ── LOOP ──
+  for (let n = 0; n < nums.length; n++) {
+    const { idx, phone } = nums[n];
+    const label = `[${String(idx).padStart(2,'0')}] +${phone}`;
+
+    try {
+      if (CFG.demo) {
+        sendDemo(phone, message);
+        log(`${label} → WhatsApp Web aberto`, 'ok');
+      } else {
+        const resp = await sendWhapi(phone, message);
+        const msgId = resp?.message?.id || resp?.sent?.id || '';
+        log(`${label} → Enviado ✓${msgId ? ' (id: '+msgId+')' : ''}`, 'ok');
+      }
+      sentCount++;
+    } catch (e) {
+      log(`${label} → FALHA: ${e.message}`, 'err');
+      failCount++;
+    }
+
+    document.getElementById('sSent').textContent = sentCount;
+    document.getElementById('sFail').textContent = failCount;
+    progFill.style.width = Math.round(((n+1)/nums.length)*100) + '%';
+
+    // Delay between sends to avoid rate limiting / bans
+    if (n < nums.length - 1) {
+      await sleep(CFG.demo ? 1300 : 2500);
+    }
+  }
+
+  // ── FINISH ──
+  log(`■ Concluído! ✓ ${sentCount} enviadas  ✗ ${failCount} falhas`, sentCount === nums.length ? 'ok' : 'inf');
+
+  document.getElementById('resSent').textContent = sentCount;
+  document.getElementById('resFail').textContent = failCount;
+  document.getElementById('resultBanner').classList.add('show');
+
+  btn.disabled = false;
+  btn.innerHTML = `
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+    Disparar Mensagens`;
+}
+
+// ─────────────────────────────────────────────
+//  UTILS
+// ─────────────────────────────────────────────
+function clearAll() {
+  for (let i = 1; i <= TOTAL; i++) {
+    const el = document.getElementById(`ph${i}`);
+    el.value = '';
+    el.classList.remove('valid','invalid');
+  }
+  sentCount = 0; failCount = 0;
+  document.getElementById('sSent').textContent = '0';
+  document.getElementById('sFail').textContent = '0';
+  clearLog();
+  document.getElementById('progWrap').style.display = 'none';
+  document.getElementById('resultBanner').classList.remove('show');
+  updateStats();
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+</script>
+</body>
+</html>
